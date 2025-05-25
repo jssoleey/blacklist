@@ -53,7 +53,6 @@ blacklist = load_blacklist()
 
 if not blacklist:
     st.info("등록된 블랙리스트가 없습니다.")
-    st.stop()
     
 # 사이드바 상단 인사 및 날짜
 today = date.today().strftime("%Y년 %m월 %d일")
