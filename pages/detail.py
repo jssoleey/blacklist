@@ -110,10 +110,11 @@ else:
 new_comment = st.text_area("댓글 작성", key="comment_input", placeholder="댓글을 남겨보세요.")
 
 if st.button("✏️ 댓글 저장"):
+    KST = timezone(timedelta(hours=9))
     comments.append({
         "작성자": st.session_state["user_name"],
         "내용": new_comment,
-        "일자": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "일자": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
     })
     with open(comment_path, "w", encoding="utf-8") as f:
         json.dump(comments, f, ensure_ascii=False, indent=2)
