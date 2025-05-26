@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 from datetime import datetime
+from llm import generate_title
 
 # 로그인 확인
 if "user_name" not in st.session_state or "user_folder" not in st.session_state:
@@ -47,7 +48,14 @@ if submitted:
     if not customer_name or not customer_phone or not consult_content:
         st.warning("고객 이름, 전화번호, 상담 내용을 모두 입력해주세요.")
     else:
+        # 제목 생성
+        title = generate_title(
+            customer_name=customer_name,
+            tags=selected_tags,
+            consult_content=consult_content
+        )
         record = {
+            "title": title,
             "consult_date": consult_date.strftime("%Y-%m-%d"),
             "author": st.session_state["user_name"],
             "customer_name": customer_name,
