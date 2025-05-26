@@ -7,6 +7,8 @@ from llm import generate_title
 # 로그인 확인
 if "user_name" not in st.session_state or "user_folder" not in st.session_state:
     st.warning("로그인 정보가 없습니다. 메인 페이지에서 로그인해주세요.")
+    if st.button("🔐 로그인 페이지로 이동"):
+        st.switch_page("main.py")
     st.stop()
 
 st.set_page_config(page_title="블랙리스트 관리", layout="centered", initial_sidebar_state="collapsed")
