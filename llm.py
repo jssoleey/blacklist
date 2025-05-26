@@ -46,3 +46,32 @@ def generate_advice(customer_name: str, tags: list, consult_content: str, author
 
     except Exception as e:
         return f"[⚠️ 오류 발생] AI 응답을 생성할 수 없습니다.\n{str(e)}"
+
+def generate_title(customer_name: str, tags: list, consult_content: str) -> str:
+    tag_text = ", ".join(tags) if tags else "없음"
+    prompt = f"""
+너는 보험 민원 데이터를 요약해주는 AI야.
+아래의 고객 민원 상황을 바탕으로, 목록에 표시할 짧고 간결한 제목을 하나 만들어줘.
+너무 길지 않게 핵심 위주로 작성하고, 격식 없이 실무자들이 한눈에 파악할 수 있도록 표현해줘.
+
+[고객명]: {customer_name}
+[관련 태그]: {tag_text}
+[상담 내용]:
+{consult_content}
+
+[제목 출력 형식]
+상황에 맞는 한 줄 제목
+"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "너는 고객 민원 데이터를 요약해서 제목을 만들어주는 AI야."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.5,
+            max_tokens=50
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return "제목 없음"
