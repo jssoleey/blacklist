@@ -36,6 +36,7 @@ def load_blacklist():
                         item = json.load(f)
                         data.append({
                             "index": index,
+                            "title": item.get("title", "제목 없음"),
                             "customer_name": item.get("customer_name", ""),
                             "tags": item.get("tags", []),
                             "tags_str": ", ".join(item.get("tags", [])),
@@ -106,7 +107,8 @@ if "visible_count" not in st.session_state:
 visible_blacklist = filtered_blacklist[:st.session_state.visible_count]
 
 for item in visible_blacklist:
-    with st.expander(f"{item['index']}. {item['customer_name']} | {item['tags_str']} | {item['consult_date']} | 작성자: {item['author']}"):
+    label = f"**{item['title']}** | {item['customer_name']} | {item['tags_str']} | {item['consult_date']} | 작성자: {item['author']}"
+    with st.expander(label):
         col1, col2, col3 = st.columns([4, 1, 1])
         with col1:
             st.markdown(
