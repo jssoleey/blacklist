@@ -24,7 +24,7 @@ if "user_name" not in st.session_state or "user_folder" not in st.session_state:
     st.warning("로그인 정보가 없습니다. 메인 페이지로 돌아가 로그인해 주세요.")
     st.stop()
 
-DATA_DIR = "blacklist_data"
+DATA_DIR = "/data/blacklist_data"
 
 # 블랙리스트 불러오기 함수
 def load_my_blacklist():
