@@ -90,7 +90,7 @@ if st.button("AI 조언 생성하기"):
     st.success("✅ AI 조언이 생성되었습니다.")
     
 if "generated_advice" in st.session_state:
-    st.text_area("🤖 AI 조언", value=st.session_state["generated_advice"], height=300)
+    st.markdown(st.session_state["generated_advice"])
 
 # 댓글 기능
 st.markdown("----")
