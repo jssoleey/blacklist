@@ -28,7 +28,7 @@ if not file_name or not author_folder:
     st.stop()
 
 # 파일 경로
-DATA_DIR = "blacklist_data"
+DATA_DIR = "/data/blacklist_data"
 file_path = os.path.join(DATA_DIR, author_folder, file_name)
 
 if not os.path.exists(file_path):
