@@ -22,6 +22,8 @@ st.markdown("### 👤내가 작성한 블랙리스트")
 
 if "user_name" not in st.session_state or "user_folder" not in st.session_state:
     st.warning("로그인 정보가 없습니다. 메인 페이지로 돌아가 로그인해 주세요.")
+    if st.button("🔐 로그인 페이지로 이동"):
+        st.switch_page("main.py")
     st.stop()
 
 DATA_DIR = "/data/blacklist_data"
