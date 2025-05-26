@@ -4,7 +4,7 @@ import json
 import hashlib
 
 # 상수: 데이터 저장 경로
-BASE_DIR = "blacklist_data"
+BASE_DIR = "/data/blacklist_data"
 os.makedirs(BASE_DIR, exist_ok=True)
 
 # Streamlit 페이지 설정
