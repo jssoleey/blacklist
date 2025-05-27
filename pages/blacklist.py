@@ -135,5 +135,8 @@ for item in visible_blacklist:
 
 # 더보기 버튼
 if st.session_state.visible_count < len(filtered_blacklist):
-    if st.button("더보기"):
-        st.session_state.visible_count += 10
+    col1, col2, col3 = st.columns(3)
+    with col2 :
+        if st.button("더보기", use_container_width=True):
+            st.session_state.visible_count += 10
+            st.rerun()
