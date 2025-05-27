@@ -17,13 +17,25 @@ st.markdown("""
 # 로그인 확인
 if "user_name" not in st.session_state or "user_folder" not in st.session_state:
     st.warning("로그인 정보가 없습니다. 메인 페이지에서 로그인해 주세요.")
+    
     if st.button("🔐 로그인 페이지로 이동"):
         st.switch_page("main.py")
+        
     st.stop()
 
 # 세션에서 선택된 파일 정보 가져오기
 file_name = st.session_state.get("detail_file")
 author_folder = st.session_state.get("detail_folder")
+# 고유 AI 조언 세션 키
+advice_key = f"advice_{author_folder}_{file_name}"
+last_page_file = st.session_state.get("last_detail_file")
+
+# 1. 다른 고객으로 바뀌었거나
+# 2. 같은 고객이라도 처음 페이지에 들어온 경우 → 조언 초기화
+if last_page_file != file_name:
+    if advice_key in st.session_state:
+        del st.session_state[advice_key]
+    st.session_state["last_detail_file"] = file_name  # 현재 진입한 고객 기록
 
 if not file_name or not author_folder:
     st.error("상세보기 항목이 선택되지 않았습니다.")
@@ -88,11 +100,11 @@ if st.button("AI 조언 생성하기"):
             consult_content=data.get("consult_content", ""),
             author=data.get("author", "")
         )
-        st.session_state["generated_advice"] = advice  # 조언을 세션에 저장
-    st.success("✅ AI 조언이 생성되었습니다.")
-    
-if "generated_advice" in st.session_state:
-    st.markdown(st.session_state["generated_advice"])
+        st.session_state[advice_key] = advice
+
+# 조언 출력
+if advice_key in st.session_state:
+    st.markdown(st.session_state[advice_key])
 
 # 댓글 기능
 st.markdown("----")
