@@ -18,7 +18,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.button("🔙 목록으로 돌아가기"):
-    st.switch_page("blacklist.py")
+    st.switch_page("main.py")
 st.markdown("----")
 
 st.markdown("### 👤내가 작성한 블랙리스트")
