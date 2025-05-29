@@ -2,28 +2,12 @@ import streamlit as st
 import os
 import json
 from datetime import date
+from login import login
 
-st.set_page_config(page_title="블랙리스트 관리", layout="wide")
-st.markdown("### 📋 블랙리스트 목록")
-
-# 사이드바 네비게이션 메뉴 숨기기
-st.markdown("""
-    <style>
-    [data-testid="stSidebarNav"] {
-        display: none;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-if "user_name" not in st.session_state or "user_folder" not in st.session_state:
-    st.warning("로그인 정보가 없습니다. 메인 페이지로 돌아가 로그인해 주세요.")
-    if st.button("🔐 로그인 페이지로 이동"):
-        st.switch_page("main.py")
-    st.stop()
-
+# 상수: 데이터 저장 경로
 DATA_DIR = "/data/blacklist_data"
 
-# 블랙리스트 불러오기 함수
+# 블랙리스트 데이터 로드 함수
 def load_blacklist():
     data = []
     index = 1
@@ -41,102 +25,222 @@ def load_blacklist():
                             "title": item.get("title", "제목 없음"),
                             "customer_name": item.get("customer_name", ""),
                             "tags": item.get("tags", []),
-                            "tags_str": ", ".join(item.get("tags", [])),
+                            "tags_str": "#"+", #".join(item.get("tags", [])),
                             "consult_date": item.get("consult_date", ""),
                             "author": item.get("author", ""),
                             "file_name": file,
-                            "folder": folder
+                            "folder": folder,
+                            "status": item.get("status", "진행 중")
                         })
                         index += 1
                 except:
                     pass
     return sorted(data, key=lambda x: x["consult_date"], reverse=True)
 
-blacklist = load_blacklist()
+# 페이지 설정
+st.set_page_config(page_title="블랙리스트 관리", layout="wide")
 
-if not blacklist:
-    st.info("등록된 블랙리스트가 없습니다.")
-    
-# 사이드바 상단 인사 및 날짜
+keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
+for k in keys_to_clear:
+    del st.session_state[k]
+
+st.markdown("""
+    <style>
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #dfe5ed;  /* 원하는 색상 코드 */
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("### 📋 블랙리스트 목록")
+st.markdown("---")
+
+# 블랙리스트 전체 로드
+data = load_blacklist()
+
+# ---------------------- 사이드바 구성 ----------------------
 today = date.today().strftime("%Y년 %m월 %d일")
 st.sidebar.markdown("")
 st.sidebar.markdown(
     f"<span style='font-size:18px;'>📅 <b>{today}</b></span>",
     unsafe_allow_html=True
 )
-st.sidebar.title(f"😊 {st.session_state['user_name']}님, 반갑습니다!")
-st.sidebar.markdown("---")
 
-# 🔎 검색 / 필터 옵션
-st.sidebar.header("🔍 필터")
+if "user_name" not in st.session_state:
+    # 로그인 UI
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🔐 로그인")
+    input_name = st.sidebar.text_input("이름", key="login_name")
+    input_pw = st.sidebar.text_input("비밀번호", type="password", key="login_pw")
+    if st.sidebar.button("로그인", use_container_width=True):
+        if not input_name or not input_pw:
+            st.sidebar.warning("이름과 비밀번호를 입력해주세요.")
+        else:
+            user_dir = login(input_name, input_pw)
+            st.session_state["user_name"] = input_name
+            st.session_state["user_folder"] = user_dir
+            st.success("✅ 로그인 성공!")
+            st.rerun()
 
-name_options = list({item["customer_name"] for item in blacklist})
-author_options = list({item["author"] for item in blacklist})
-tag_options = sorted({tag for item in blacklist for tag in item["tags"]})
+    st.sidebar.markdown("---")
 
-search_name = st.sidebar.text_input("고객명 검색")
-search_author = st.sidebar.text_input("작성자 검색")
-search_tags = st.sidebar.multiselect("태그 선택", options=tag_options)
+    # 🔍 검색 / 필터 옵션
+    st.sidebar.markdown("### 🔍 검색")
+    name_options = list({item["customer_name"] for item in data})
+    author_options = list({item["author"] for item in data})
+    tag_options = sorted({tag for item in data for tag in item["tags"]})
 
-# 필터링
-filtered_blacklist = [item for item in blacklist if
+    search_name = st.sidebar.text_input("고객명 검색")
+    search_author = st.sidebar.text_input("작성자 검색")
+    search_tags = st.sidebar.multiselect("태그 선택", options=tag_options)
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("➕ 블랙리스트 추가하기", use_container_width=True):
+        st.sidebar.warning("로그인 후 이용해주세요.")
+
+else:
+    # 로그인 된 상태
+    st.sidebar.title(f"😊 {st.session_state['user_name']}님, 반갑습니다!")
+    st.sidebar.markdown("---")
+
+    # 🔍 검색 / 필터 옵션
+    st.sidebar.markdown("### 🔍 검색")
+    name_options = list({item["customer_name"] for item in data})
+    author_options = list({item["author"] for item in data})
+    tag_options = sorted({tag for item in data for tag in item["tags"]})
+
+    search_name = st.sidebar.text_input("고객명 검색")
+    search_author = st.sidebar.text_input("작성자 검색")
+    search_tags = st.sidebar.multiselect("태그 선택", options=tag_options)
+
+    st.sidebar.markdown("---")
+    if st.sidebar.button("➕ 블랙리스트 추가하기", use_container_width=True):
+        st.switch_page("pages/add.py")
+
+    if st.sidebar.button("📂 마이페이지", use_container_width=True):
+        st.session_state["my_author"] = st.session_state["user_name"]
+        st.switch_page("pages/mypage.py")
+
+    if st.sidebar.button("🔓 로그아웃", use_container_width=True):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
+
+# ---------------------- 필터링 처리 ----------------------
+filtered_blacklist = [item for item in data if
     (search_name.lower() in item["customer_name"].lower()) and
     (search_author.lower() in item["author"].lower()) and
     (all(tag in item["tags"] for tag in search_tags))
 ]
 
-# 예외 처리
 if search_name and all(search_name.lower() not in name.lower() for name in name_options):
     st.sidebar.warning("해당 고객명을 찾을 수 없습니다.")
 if search_author and all(search_author.lower() not in author.lower() for author in author_options):
     st.sidebar.warning("해당 작성자를 찾을 수 없습니다.")
 
-st.sidebar.markdown("---")
-
-# 마이페이지 버튼
-if st.sidebar.button("📂 마이페이지", use_container_width=True):
-    st.session_state["my_author"] = st.session_state["user_name"]
-    st.switch_page("pages/mypage.py")
-
-# 블랙리스트 추가 버튼 → 사이드바로 이동
-if st.sidebar.button("➕ 블랙리스트 추가하기", use_container_width=True):
-    st.switch_page("pages/add.py")
-
-# 보여줄 개수 설정
+# ---------------------- 목록 출력 ----------------------
+def render_status_badge(status):
+    if status == "처리 완료":
+        color = "#d4edda"
+        border = "#28a745"
+        emoji = "🟢"
+    else:
+        color = "#fff3cd"
+        border = "#ffc107"
+        emoji = "🟡"
+    return f"""
+    <div style='
+        display:inline-block;
+        background-color:{color};
+        border:1px solid {border};
+        color:#333;
+        padding:5px 12px;
+        border-radius:16px;
+        font-size:14px;
+        font-weight:bold;
+        margin: 0 0 8px 0;
+    '>{emoji} {status}</div>
+    """
+    
 if "visible_count" not in st.session_state:
     st.session_state.visible_count = 10
 
 visible_blacklist = filtered_blacklist[:st.session_state.visible_count]
 
-for item in visible_blacklist:
-    label = f"**{item['title']}** | {item['customer_name']} | {item['tags_str']} | {item['consult_date']} | 작성자: {item['author']}"
-    with st.expander(label):
-        col1, col2, col3 = st.columns([4, 1, 1])
-        with col1:
+for item in visible_blacklist: 
+    label = f"**{item['customer_name']}** | **{item['title']}**" 
+    with st.expander(label, expanded=True):
+        col1, col2, col3 = st.columns([6, 1, 1.5])
+        with col1 :
             st.markdown(
-                "<p style='font-size: 13px; color: #666;'>👉 상세 내용을 보시려면 아래 버튼을 클릭하세요.</p>",
+                f"<p style='font-size: 12px; color: #666; margin-top: 0px'>{item['tags_str']}</p>",
                 unsafe_allow_html=True
             )
+        with col2 :
+            st.markdown(
+                f"<p style='font-size: 12px; color: #666; margin-top: -30px'>{item['consult_date']}</p>",
+                unsafe_allow_html=True
+            )
+        with col3 :
+            st.markdown(
+                f"<p style='font-size: 12px; color: #666; margin-top: -30px'>작성자: {item['author']}</p>",
+                unsafe_allow_html=True
+            )
+
+        col1, col2, col3, col4 = st.columns([1, 2, 1, 2])
+        with col1:
+            st.markdown(render_status_badge(item.get("status", "진행 중")), unsafe_allow_html=True)
         with col2:
-            if st.button("상세 보기", key=f"view_{item['index']}"):
+            st.markdown(
+                "<p style='font-size: 12px; color: #666; margin-top: 10px'>👉 상세 내용을 보시려면 버튼을 클릭하세요.</p>",
+                unsafe_allow_html=True
+            )
+        with col3:
+            if st.button("상세 보기", key=f"view_{item['index']}", use_container_width=True):
                 st.session_state["detail_file"] = item["file_name"]
                 st.session_state["detail_folder"] = item["folder"]
+                st.session_state["from_blacklist"] = True
                 st.switch_page("pages/detail.py")
-        with col3:
-            if item["author"] == st.session_state["user_name"]:
-                if st.button("삭제", key=f"delete_{item['index']}"):
+
+        confirm_key = f"confirm_delete_{item['index']}"  # 밖에서 정의
+
+        with col4:
+            if "user_name" in st.session_state and item["author"] == st.session_state["user_name"]:
+                col3a, col3b = st.columns(2)
+                with col3a:
+                    if not st.session_state.get(confirm_key, False):
+                        if st.button("삭제하기", key=f"delete_{item['index']}", use_container_width=True):
+                            st.session_state[confirm_key] = True
+                with col3b:
+                    if st.button("수정하기", key=f"edit_{item['index']}", use_container_width=True):
+                        st.session_state["edit_file"] = item["file_name"]
+                        st.session_state["edit_folder"] = item["folder"]
+                        st.switch_page("pages/edit.py")
+
+        # ✅ 삭제 확인 영역은 열 외부 (columns 영향 받지 않음)
+        if st.session_state.get(confirm_key, False):
+            st.markdown("<br>", unsafe_allow_html=True)  # 간격 조절용
+            st.markdown("---")
+            st.warning(f"🗑️ **{item['customer_name']}** 항목을 정말 삭제하시겠습니까?")
+            col_confirm1, col_confirm2 = st.columns([1, 1])
+            with col_confirm1:
+                if st.button("✅ 예", key=f"confirm_yes_{item['index']}", use_container_width=True):
                     file_path = os.path.join(DATA_DIR, item["folder"], item["file_name"])
                     try:
                         os.remove(file_path)
                         st.success(f"{item['customer_name']} 항목이 삭제되었습니다.")
+                        del st.session_state[confirm_key]
                         st.rerun()
                     except Exception as e:
                         st.error("삭제 중 오류 발생: " + str(e))
+            with col_confirm2:
+                if st.button("❌ 아니오", key=f"confirm_no_{item['index']}", use_container_width=True):
+                    st.session_state[confirm_key] = False
+                    st.rerun()
 
-# 더보기 버튼
 if st.session_state.visible_count < len(filtered_blacklist):
-    col1, col2, col3 = st.columns(3)
-    with col2 :
-        if st.button("더보기", use_container_width=True):
-            st.session_state.visible_count += 10
-            st.rerun()
+    if st.button("더보기"):
+        st.session_state.visible_count += 10

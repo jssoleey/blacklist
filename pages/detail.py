@@ -4,6 +4,30 @@ import json
 from datetime import datetime, timedelta, timezone
 from llm import generate_advice
 
+def render_status_badge(status):
+    if status == "처리 완료":
+        color = "#d4edda"
+        border = "#28a745"
+        emoji = "🟢"
+    else:
+        color = "#fff3cd"
+        border = "#ffc107"
+        emoji = "🟡"
+
+    return f"""
+    <div style='
+        display:inline-block;
+        background-color:{color};
+        border:1px solid {border};
+        color:#333;
+        padding:5px 12px;
+        border-radius:16px;
+        font-size:14px;
+        font-weight:bold;
+        margin-top:6px;
+    '>{emoji} {status}</div>
+    """
+
 st.set_page_config(page_title="블랙리스트 관리", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -14,28 +38,21 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 로그인 확인
-if "user_name" not in st.session_state or "user_folder" not in st.session_state:
-    st.warning("로그인 정보가 없습니다. 메인 페이지에서 로그인해 주세요.")
-    
-    if st.button("🔐 로그인 페이지로 이동"):
-        st.switch_page("main.py")
-        
-    st.stop()
-
 # 세션에서 선택된 파일 정보 가져오기
 file_name = st.session_state.get("detail_file")
 author_folder = st.session_state.get("detail_folder")
-# 고유 AI 조언 세션 키
-advice_key = f"advice_{author_folder}_{file_name}"
-last_page_file = st.session_state.get("last_detail_file")
+if not file_name or not author_folder:
+    st.error("상세보기 항목이 선택되지 않았습니다.")
+    st.stop()
 
-# 1. 다른 고객으로 바뀌었거나
-# 2. 같은 고객이라도 처음 페이지에 들어온 경우 → 조언 초기화
-if last_page_file != file_name:
+# 파일 로드 이후, 세션 기반 조언 초기화 여부 확인
+advice_key = f"advice_{author_folder}_{file_name}"
+
+# 목록에서 진입한 경우에만 초기화
+if st.session_state.get("from_blacklist", False):
     if advice_key in st.session_state:
         del st.session_state[advice_key]
-    st.session_state["last_detail_file"] = file_name  # 현재 진입한 고객 기록
+    st.session_state["from_blacklist"] = False  # 초기화 후 플래그 리셋
 
 if not file_name or not author_folder:
     st.error("상세보기 항목이 선택되지 않았습니다.")
@@ -53,17 +70,31 @@ if not os.path.exists(file_path):
 with open(file_path, "r", encoding="utf-8") as f:
     data = json.load(f)
 
-# 수정 모드 여부
-editable = (data.get("author") == st.session_state["user_name"])
+editable = (
+    "user_name" in st.session_state and
+    data.get("author") == st.session_state["user_name"]
+)
 
 if st.button("🔙 목록으로 돌아가기"):
     st.switch_page("pages/blacklist.py")
+st.markdown("----")
 
-st.markdown("")
-st.markdown("")
-    
+status = data.get("status", "진행 중")  # 기본값: 진행 중
+
+# 작성자 본인은 상태 전환 가능
+if editable :
+    new_status = "처리 완료" if status == "진행 중" else "진행 중"
+    if st.button(f"🔁 '{new_status}' 상태로 변경"):
+        data["status"] = new_status
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        st.success(f"진행 현황이 '{new_status}'로 변경되었습니다.")
+        st.rerun()
+        
+st.markdown(render_status_badge(status), unsafe_allow_html=True)
+
 info_html = f"""
-    <div style="background-color:#f0f8ff; padding:15px; border:1px solid #ddd; border-radius:8px; margin-bottom:20px; line-height:2.0;">
+    <div style="background-color:#f0f8ff; padding:15px; border:1px solid #ddd; border-radius:8px; margin-top: 10px; margin-bottom:20px; line-height:2.0;">
         <h5>📄 고객 정보</h5>
         <ul>
             <li><b>고객명:</b> {data.get('customer_name', '')}</li>
@@ -71,23 +102,14 @@ info_html = f"""
             <li><b>상담일자:</b> {data.get('consult_date', '')}</li>
             <li><b>상담원:</b> {data.get('author', '')}</li>
             <li><b>태그:</b> {', '.join(data.get('tags', []))}</li>
+        </ul>
+        <h5>📌 내용</h5>
+        <ul>
+            <li>{data.get("consult_content", "")}</li>
+        </ul>
+    </div>
 """
 st.markdown(info_html, unsafe_allow_html=True)
-
-# 상세 내용 출력 또는 수정
-
-st.markdown("")
-st.markdown("###### 📌 내용")
-
-if editable:
-    updated_content = st.text_area("상담 내용 수정", value=data.get("consult_content", ""), height=200)
-    if st.button("💾 수정 내용 저장"):
-        data["consult_content"] = updated_content
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        st.success("상담 내용이 수정되었습니다.")
-else:
-    st.write(data.get("consult_content", ""))
 
 st.markdown("----")
 st.markdown("##### 🤖 AI 조언 생성하기")
@@ -102,52 +124,58 @@ if st.button("AI 조언 생성하기"):
         )
         st.session_state[advice_key] = advice
 
-# 조언 출력
 if advice_key in st.session_state:
     st.markdown(st.session_state[advice_key])
 
-# 댓글 기능
 st.markdown("----")
 
-# 댓글 파일 경로
+# 댓글 기능
 comment_path = file_path.replace(".json", "_comments.json")
 
-if os.path.exists(comment_path):
-    with open(comment_path, "r", encoding="utf-8") as f:
-        comments = json.load(f)
-else:
-    comments = []
+def load_comments(comment_path):
+    if os.path.exists(comment_path):
+        with open(comment_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+comments = load_comments(comment_path)
 
 # 댓글 입력
-new_comment = st.text_area("댓글 작성", key="comment_input", placeholder="댓글을 남겨보세요.")
+if "user_name" in st.session_state:
+    new_comment = st.text_area("댓글 작성", key="comment_input", placeholder="댓글을 남겨보세요.")
 
-if st.button("✏️ 댓글 저장"):
-    KST = timezone(timedelta(hours=9))
-    comments.append({
-        "작성자": st.session_state["user_name"],
-        "내용": new_comment,
-        "일자": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
-    })
-    with open(comment_path, "w", encoding="utf-8") as f:
-        json.dump(comments, f, ensure_ascii=False, indent=2)
-    st.success("댓글이 저장되었습니다.")
-    st.rerun()
+    if st.button("✏️ 댓글 저장"):
+        if new_comment.strip() == "":
+            st.warning("댓글 내용을 입력해주세요.")
+        else:
+            KST = timezone(timedelta(hours=9))
+            comments.append({
+                "작성자": st.session_state["user_name"],
+                "내용": new_comment.strip(),
+                "일자": datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S")
+            })
+            with open(comment_path, "w", encoding="utf-8") as f:
+                json.dump(comments, f, ensure_ascii=False, indent=2)
+
+            st.success("댓글이 저장되었습니다.")
+            st.rerun()
+
+else:
+    st.text_area("댓글 작성", key="comment_input_disabled", placeholder="로그인 후 이용해주세요.", disabled=True)
 
 # 댓글 표시 및 삭제 기능
 if comments:
     st.markdown("")
-    updated_comments = []
     for i, c in enumerate(reversed(comments)):
         col1, col2 = st.columns([8, 1])
         with col1:
             st.markdown(f"**{c['작성자']}** ({c['일자']})  \n{c['내용']}")
         with col2:
-            if c["작성자"] == st.session_state["user_name"]:
+            if "user_name" in st.session_state and c["작성자"] == st.session_state["user_name"]:
                 if st.button("🗑 삭제", key=f"delete_comment_{i}"):
-                    original_index = len(comments) - 1 - i  # 역순으로 표시되었기 때문에 실제 인덱스 보정
+                    original_index = len(comments) - 1 - i
                     del comments[original_index]
                     with open(comment_path, "w", encoding="utf-8") as f:
                         json.dump(comments, f, ensure_ascii=False, indent=2)
                     st.success("댓글이 삭제되었습니다.")
                     st.rerun()
-
