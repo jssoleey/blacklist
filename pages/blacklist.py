@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import json
 from datetime import date
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from login import login
 
 # 상수: 데이터 저장 경로
