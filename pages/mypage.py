@@ -119,7 +119,7 @@ for item in my_blacklist:
                 st.session_state["detail_file"] = item["file_name"]
                 st.session_state["detail_folder"] = item["folder"]
                 st.session_state["from_blacklist"] = True
-                st.switch_page("detail.py")
+                st.switch_page("pages/detail.py")
         with col4:
             col3a, col3b = st.columns(2)
             confirm_key = f"confirm_delete_{item['index']}"
@@ -151,4 +151,4 @@ for item in my_blacklist:
                 if st.button("수정하기", key=f"edit_{item['index']}", use_container_width=True):
                     st.session_state["edit_file"] = item["file_name"]
                     st.session_state["edit_folder"] = item["folder"]
-                    st.switch_page("edit.py")
+                    st.switch_page("pages/edit.py")
