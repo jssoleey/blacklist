@@ -149,7 +149,7 @@ else:
 
     if st.sidebar.button("📂 마이페이지", use_container_width=True):
         st.session_state["my_author"] = st.session_state["user_name"]
-        st.switch_page("mypage")
+        st.switch_page("pages/mypage.py")
 
     if st.sidebar.button("🔓 로그아웃", use_container_width=True):
         for key in list(st.session_state.keys()):
@@ -230,7 +230,7 @@ for item in visible_blacklist:
                 st.session_state["detail_file"] = item["file_name"]
                 st.session_state["detail_folder"] = item["folder"]
                 st.session_state["from_blacklist"] = True
-                st.switch_page("detail")
+                st.switch_page("pages/detail")
 
         confirm_key = f"confirm_delete_{item['index']}"  # 밖에서 정의
 
