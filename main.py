@@ -121,7 +121,7 @@ else:
 
     st.sidebar.markdown("---")
     if st.sidebar.button("➕ 블랙리스트 추가하기", use_container_width=True):
-        st.switch_page("add")
+        st.switch_page("pages/add.py")
 
     if st.sidebar.button("📂 마이페이지", use_container_width=True):
         st.session_state["my_author"] = st.session_state["user_name"]
@@ -206,7 +206,7 @@ for item in visible_blacklist:
                 st.session_state["detail_file"] = item["file_name"]
                 st.session_state["detail_folder"] = item["folder"]
                 st.session_state["from_blacklist"] = True
-                st.switch_page("pages/detail")
+                st.switch_page("pages/detail.py")
 
         confirm_key = f"confirm_delete_{item['index']}"  # 밖에서 정의
 
@@ -221,7 +221,7 @@ for item in visible_blacklist:
                     if st.button("수정하기", key=f"edit_{item['index']}", use_container_width=True):
                         st.session_state["edit_file"] = item["file_name"]
                         st.session_state["edit_folder"] = item["folder"]
-                        st.switch_page("edit")
+                        st.switch_page("pages/edit.py")
 
         # ✅ 삭제 확인 영역은 열 외부 (columns 영향 받지 않음)
         if st.session_state.get(confirm_key, False):
