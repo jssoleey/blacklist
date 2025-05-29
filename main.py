@@ -59,6 +59,12 @@ if os.path.exists(pages_dir):
             st.write(" -", os.path.relpath(os.path.join(root, file), pages_dir))
 else:
     st.error("❌ pages 디렉토리를 찾을 수 없습니다.")
+
+
+pages = st.runtime.scriptrunner.get_pages("")
+st.write("📄 현재 인식된 페이지 목록:")
+for key, page in pages.items():
+    st.write(f"- `{key}`: {page['page_script_hash']}, `{page['page_name']}`")
 #####
 
 keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
