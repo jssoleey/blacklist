@@ -1,4 +1,4 @@
-import streamlit as st
+'''import streamlit as st
 import os
 import json
 from datetime import date
@@ -8,7 +8,28 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from login import login
 
 # 상수: 데이터 저장 경로
-DATA_DIR = "/data/blacklist_data"
+DATA_DIR = "/data/blacklist_data"'''
+import streamlit as st
+import os
+import json
+from datetime import date
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from login import login
+
+BASE_DIR = os.path.dirname(__file__)
+ABS_DATA_DIR = "/data/blacklist_data"      # Render 배포용 디스크
+REL_DATA_DIR = os.path.join(BASE_DIR, "blacklist_data")  # 로컬 테스트용
+
+# 디렉토리 존재하는 쪽을 DATA_DIR로 설정
+if os.path.isdir(ABS_DATA_DIR):
+    DATA_DIR = ABS_DATA_DIR
+else:
+    DATA_DIR = REL_DATA_DIR
+    
+# 페이지 설정
+st.set_page_config(page_title="블랙리스트 관리", layout="wide")
 
 # 블랙리스트 데이터 로드 함수
 def load_blacklist():
@@ -40,12 +61,9 @@ def load_blacklist():
                     pass
     return sorted(data, key=lambda x: x["consult_date"], reverse=True)
 
-# 페이지 설정
-st.set_page_config(page_title="블랙리스트 관리", layout="wide")
-
-keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
-for k in keys_to_clear:
-    del st.session_state[k]
+#keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
+#for k in keys_to_clear:
+#    del st.session_state[k]
 
 st.markdown("""
     <style>
@@ -121,9 +139,15 @@ else:
 
     st.sidebar.markdown("---")
     if st.sidebar.button("➕ 블랙리스트 추가하기", use_container_width=True):
+        for k in list(st.session_state.keys()):
+            if k.startswith('confirm_delete_'):
+                del st.session_state[k]
         st.switch_page("pages/add.py")
 
     if st.sidebar.button("📂 마이페이지", use_container_width=True):
+        for k in list(st.session_state.keys()):
+            if k.startswith('confirm_delete_'):
+                del st.session_state[k]        
         st.session_state["my_author"] = st.session_state["user_name"]
         st.switch_page("pages/mypage.py")
 
@@ -206,6 +230,9 @@ for item in visible_blacklist:
                 st.session_state["detail_file"] = item["file_name"]
                 st.session_state["detail_folder"] = item["folder"]
                 st.session_state["from_blacklist"] = True
+                for k in list(st.session_state.keys()):
+                    if k.startswith('confirm_delete_'):
+                        del st.session_state[k]
                 st.switch_page("pages/detail.py")
 
         confirm_key = f"confirm_delete_{item['index']}"  # 밖에서 정의
@@ -231,17 +258,41 @@ for item in visible_blacklist:
             col_confirm1, col_confirm2 = st.columns([1, 1])
             with col_confirm1:
                 if st.button("✅ 예", key=f"confirm_yes_{item['index']}", use_container_width=True):
-                    file_path = os.path.join(DATA_DIR, item["folder"], item["file_name"])
-                    try:
-                        os.remove(file_path)
-                        st.success(f"{item['customer_name']} 항목이 삭제되었습니다.")
-                        del st.session_state[confirm_key]
-                        st.rerun()
-                    except Exception as e:
-                        st.error("삭제 중 오류 발생: " + str(e))
+                    st.write("🔔 confirm_yes 클릭 감지:", confirm_key)
+
+                    # 1) 폴더 경로
+                    folder_path = os.path.join(DATA_DIR, item["folder"])
+                    st.write("📂 폴더 경로:", folder_path, "존재 여부:", os.path.isdir(folder_path))
+
+                    # 2) 폴더 안 파일 리스트
+                    st.text(f"📄 폴더 내 파일 리스트: {os.listdir(folder_path)}")
+
+                    # 3) 삭제 대상 파일 경로
+                    raw_path    = os.path.join(DATA_DIR, item["folder"], item["file_name"])
+                    norm_path   = os.path.normpath(raw_path)
+                    file_path   = os.path.abspath(norm_path)
+                    st.text(f"🗺 삭제 대상 경로: {file_path}")
+                    exists_before = os.path.exists(file_path)
+                    st.text(f"⚙ 삭제 전 파일 존재 여부: {exists_before}")
+
+                    if exists_before:
+                        try:
+                            os.remove(file_path)
+                            # 5) 삭제 후 존재 여부
+                            st.write("🗑 삭제 후 파일 존재 여부:", os.path.exists(file_path))
+                            st.success("삭제 로직이 실행되었습니다.")
+                            del st.session_state[confirm_key]
+                            st.success("삭제되었습니다.")
+                            st.rerun()
+                            #st.stop()
+                        except Exception as e:
+                            st.error("삭제 중 예외 발생: " + str(e))
+                    else:
+                        st.error("❌ 해당 파일이 존재하지 않습니다.")
             with col_confirm2:
                 if st.button("❌ 아니오", key=f"confirm_no_{item['index']}", use_container_width=True):
-                    st.session_state[confirm_key] = False
+                    #st.session_state[confirm_key] = False
+                    del st.session_state[confirm_key]
                     st.rerun()
 
 if st.session_state.visible_count < len(filtered_blacklist):
