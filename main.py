@@ -43,30 +43,6 @@ def load_blacklist():
 # 페이지 설정
 st.set_page_config(page_title="블랙리스트 관리", layout="wide")
 
-##### 디버깅
-import os
-
-# 현재 작업 디렉토리 확인
-cwd = os.getcwd()
-st.write("📂 현재 작업 디렉토리:", cwd)
-
-# pages 디렉토리 내 파일 구조 확인
-pages_dir = os.path.join(cwd, "pages")
-if os.path.exists(pages_dir):
-    st.write("📄 pages 폴더 내 파일 목록:")
-    for root, dirs, files in os.walk(pages_dir):
-        for file in files:
-            st.write(" -", os.path.relpath(os.path.join(root, file), pages_dir))
-else:
-    st.error("❌ pages 디렉토리를 찾을 수 없습니다.")
-
-
-pages = st.runtime.scriptrunner.get_pages("")
-st.write("📄 현재 인식된 페이지 목록:")
-for key, page in pages.items():
-    st.write(f"- `{key}`: {page['page_script_hash']}, `{page['page_name']}`")
-#####
-
 keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
 for k in keys_to_clear:
     del st.session_state[k]
