@@ -5,10 +5,6 @@ from datetime import datetime
 
 st.set_page_config(page_title="블랙리스트 관리", layout="wide", initial_sidebar_state="collapsed")
 
-keys_to_clear = [k for k in st.session_state.keys() if k.startswith("confirm_delete_")]
-for k in keys_to_clear:
-    del st.session_state[k]
-
 st.markdown("""
     <style>
     [data-testid="stSidebarNav"] {
@@ -18,6 +14,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.button("🔙 목록으로 돌아가기"):
+    for k in list(st.session_state.keys()):
+        if k.startswith('confirm_delete_'):
+            del st.session_state[k]
     st.switch_page("main.py")
 st.markdown("----")
 
@@ -135,17 +134,24 @@ for item in my_blacklist:
                 col_confirm1, col_confirm2 = st.columns([1, 1])
                 with col_confirm1:
                     if st.button("✅ 예", key=f"confirm_yes_{item['index']}", use_container_width=True):
-                        file_path = os.path.join(DATA_DIR, item["folder"], item["file_name"])
-                        try:
-                            os.remove(file_path)
-                            st.success(f"{item['customer_name']} 항목이 삭제되었습니다.")
-                            del st.session_state[confirm_key]
-                            st.rerun()
-                        except Exception as e:
-                            st.error("삭제 중 오류 발생: " + str(e))
+                        raw_path  = os.path.join(DATA_DIR, item["folder"], item["file_name"])
+                        norm_path = os.path.normpath(raw_path)
+                        file_path = os.path.abspath(norm_path)
+
+                        if os.path.exists(file_path):
+                            try:
+                                os.remove(file_path)
+                                del st.session_state[confirm_key]
+                                st.success(f"{item['customer_name']} 항목이 삭제되었습니다.")
+                                st.rerun()
+                            except Exception as e:
+                                st.error("❌ 삭제 중 오류 발생: " + str(e))
+                        else:
+                            st.error("❌ 해당 파일이 존재하지 않아 삭제할 수 없습니다.")
                 with col_confirm2:
-                    if st.button("❌ 아니오", key=f"confirm_no_{item['index']}", use_container_width=True):
-                        st.session_state[confirm_key] = False
+                    if st.button("❌ 아니요", key=f"confirm_no_{item['index']}", use_container_width=True):
+                        del st.session_state[confirm_key]
+                        st.rerun()
 
             with col3b:
                 if st.button("수정하기", key=f"edit_{item['index']}", use_container_width=True):
