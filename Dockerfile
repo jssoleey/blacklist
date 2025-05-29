@@ -5,7 +5,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # 3. 필요 파일 복사
-COPY . /app
+COPY ./ /app/
 
 # 4. 라이브러리 설치
 RUN pip install --upgrade pip
