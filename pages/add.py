@@ -15,7 +15,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.button("🔙 목록으로 돌아가기"):
-    st.switch_page("pages/blacklist.py")
+    st.switch_page("blacklist.py")
 st.markdown("----")
 
 st.markdown("### ➕ 블랙리스트 고객 등록")
@@ -70,4 +70,4 @@ if submitted:
             json.dump(record, f, ensure_ascii=False, indent=2)
 
         st.success("✅ 블랙리스트가 성공적으로 등록되었습니다.")
-        st.switch_page("pages/blacklist.py")
+        st.switch_page("blacklist.py")
