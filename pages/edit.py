@@ -16,7 +16,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if st.button("🔙 목록으로 돌아가기"):
-    st.switch_page("blacklist.py")
+    st.switch_page("main.py")
 st.markdown("----")
 
 st.markdown("### ✏️ 블랙리스트 정보 수정")
@@ -84,4 +84,4 @@ if submitted:
         json.dump(updated, f, ensure_ascii=False, indent=2)
     st.success("수정이 완료되었습니다!")
     st.session_state["refresh_blacklist"] = True  # ✅ 이 줄 추가
-    st.switch_page("blacklist.py")
+    st.switch_page("main.py")
