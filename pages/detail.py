@@ -76,7 +76,7 @@ editable = (
 )
 
 if st.button("🔙 목록으로 돌아가기"):
-    st.switch_page("blacklist.py")
+    st.switch_page("main.py")
 st.markdown("----")
 
 status = data.get("status", "진행 중")  # 기본값: 진행 중
